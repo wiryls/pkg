@@ -1,2 +1,3 @@
-# pkg
-some interesting Golang code that comes to my mind.
+# Introduction
+
+This repository contains some strange Golang code that comes to my mind.
