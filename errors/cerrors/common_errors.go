@@ -1,9 +1,19 @@
 package cerrors
 
-import "github.com/wiryls/pkg/errors/detail"
+import (
+	"errors"
+
+	"github.com/wiryls/pkg/errors/detail"
+)
 
 // This file contains some samples showing how to customize new errors from
-// our `detail.Detail`.
+// our `detail.Detail`. And also try to mix error values with error types.
+
+// error values.
+var (
+	ErrInternal        = errors.New("internal")
+	ErrInvalidArgument = errors.New("invalid argument")
+)
 
 // InternalError is of type internal error.
 //  - Please use `InternalError` to create it.
@@ -19,7 +29,9 @@ func Internal(message string, inner error) (err error) {
 		message = "internal error"
 		fallthrough
 	default:
-		return &InternalError{Detail: detail.New(message, 1, inner)}
+		return &InternalError{
+			Detail: detail.New(message, ErrInternal, 1, inner),
+		}
 	}
 }
 
@@ -55,7 +67,7 @@ func InvalidArgument(argument string, reason string) error {
 	}
 
 	err := &InvalidArgumentError{Argument: argument, Reason: reason}
-	err.Detail = detail.New(err, 1, nil)
+	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
 	return err
 }
 
@@ -68,7 +80,7 @@ func NilArgument(argument string) error {
 
 	reason := "nil is not allowed"
 	err := &InvalidArgumentError{Argument: argument, Reason: reason}
-	err.Detail = detail.New(err, 1, nil)
+	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
 	return err
 }
 
@@ -79,7 +91,7 @@ func MaybeInvalidArgument(cond bool, argument string, reason string) error {
 	}
 
 	err := &InvalidArgumentError{Argument: argument, Reason: reason}
-	err.Detail = detail.New(err, 1, nil)
+	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
 	return err
 }
 
@@ -91,6 +103,6 @@ func MaybeNilArgument(argument interface{}, name string) error {
 
 	reason := "nil is not allowed"
 	err := &InvalidArgumentError{Argument: name, Reason: reason}
-	err.Detail = detail.New(err, 1, nil)
+	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
 	return err
 }

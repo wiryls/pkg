@@ -21,6 +21,7 @@ func TestInternal(t *testing.T) {
 
 		internal := (*cerrors.InternalError)(nil)
 		assert.True(errors.As(err, &internal))
+		assert.True(errors.Is(err, cerrors.ErrInternal))
 		assert.Equal(err, internal)
 		assert.Equal(msg, err.Error())
 	}
@@ -41,15 +42,18 @@ func TestInternal(t *testing.T) {
 
 		var e0 *cerrors.InvalidArgumentError
 		assert.True(errors.As(level2, &e0))
+		assert.True(errors.Is(level2, cerrors.ErrInvalidArgument))
 		assert.Equal(level0, e0)
 		assert.Equal("orz", e0.Argument)
 
 		var e1 *cerrors.InternalError
 		assert.True(errors.As(level1, &e1))
+		assert.True(errors.Is(level1, cerrors.ErrInternal))
 		assert.Equal(level1, e1)
 
 		var e2 *cerrors.InternalError
 		assert.True(errors.As(level2, &e2))
+		assert.True(errors.Is(level2, cerrors.ErrInternal))
 		assert.Equal(level2, e2)
 	}
 	{
@@ -57,6 +61,8 @@ func TestInternal(t *testing.T) {
 		type IE = cerrors.InternalError
 		iae := cerrors.InvalidArgument("bar", "baz")
 		err := cerrors.Internal("foo", iae)
+		assert.True(errors.Is(err, cerrors.ErrInvalidArgument))
+		assert.True(errors.Is(err, cerrors.ErrInternal))
 
 		if out := (*IE)(nil); errors.As(err, &out) {
 			assert.Equal(err, out)

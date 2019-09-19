@@ -9,9 +9,12 @@ import (
 // New detail error. It is used to create other errors with stack trace and
 // an inner error.
 //  - `cause` is something like message.
+//  - `alias` is an error value used in `errors.Is`
 //  - stack trace will be added if`skipCaller` >= 0.
 //  - `inner` is an optional inner error of this error.
-func New(cause interface{}, skipCaller int, inner error) Detail {
+func New(
+	cause interface{}, alias error, skipCaller int, inner error,
+) Detail {
 	var frame *xerrors.Frame
 	if skipCaller >= 0 {
 		caller := xerrors.Caller(skipCaller + 1)
@@ -19,6 +22,7 @@ func New(cause interface{}, skipCaller int, inner error) Detail {
 	}
 	return Detail{
 		cause: cause,
+		alias: alias,
 		frame: frame,
 		inner: inner,
 	}
@@ -28,6 +32,7 @@ func New(cause interface{}, skipCaller int, inner error) Detail {
 // Usually, it is used by other errors and should always be created by `New`.
 type Detail struct {
 	cause interface{}
+	alias error
 	frame *xerrors.Frame
 	inner error
 }
@@ -55,11 +60,19 @@ func (e *Detail) FormatError(p xerrors.Printer) (next error) {
 		default:
 			p.Print(e.cause)
 		}
+	} else if e.alias != nil {
+		p.Print(e.alias.Error())
 	}
+
 	if e.frame != nil {
 		e.frame.Format(p)
 	}
 	return e.inner
+}
+
+// Is enable alias.
+func (e *Detail) Is(err error) bool {
+	return e.alias == err || e == err
 }
 
 // Unwrap this error and get the inner error.
