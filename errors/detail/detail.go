@@ -8,24 +8,14 @@ import (
 
 // New detail error. It is used to create other errors with stack trace and
 // an inner error.
-//  - `cause` is something like message.
-//  - `alias` is an error value used in `errors.Is`
-//  - stack trace will be added if`skipCaller` >= 0.
-//  - `inner` is an optional inner error of this error.
-func New(
-	cause interface{}, alias error, skipCaller int, inner error,
-) Detail {
-	var frame *xerrors.Frame
-	if skipCaller >= 0 {
-		caller := xerrors.Caller(skipCaller + 1)
-		frame = &caller
+func New(what interface{}, flags ...Flag) Detail {
+	detail := Detail{cause: what}
+	for _, f := range flags {
+		if f != nil {
+			f(&detail)
+		}
 	}
-	return Detail{
-		cause: cause,
-		alias: alias,
-		frame: frame,
-		inner: inner,
-	}
+	return detail
 }
 
 // Detail error contains a message, stack traces and an inner error.
@@ -33,8 +23,8 @@ func New(
 type Detail struct {
 	cause interface{}
 	alias error
-	frame *xerrors.Frame
 	inner error
+	frame *xerrors.Frame
 }
 
 // Error implements the error interface.

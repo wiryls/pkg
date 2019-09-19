@@ -29,9 +29,12 @@ func Internal(message string, inner error) (err error) {
 		message = "internal error"
 		fallthrough
 	default:
-		return &InternalError{
-			Detail: detail.New(message, ErrInternal, 1, inner),
-		}
+		return &InternalError{Detail: detail.New(
+			message,
+			detail.FlagAlias(ErrInternal),
+			detail.FlagInner(inner),
+			detail.FlagStackTrace(1),
+		)}
 	}
 }
 
@@ -65,10 +68,7 @@ func InvalidArgument(argument string, reason string) error {
 	if argument == "" && reason == "" {
 		return nil
 	}
-
-	err := &InvalidArgumentError{Argument: argument, Reason: reason}
-	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
-	return err
+	return invalidArgumentError(argument, reason)
 }
 
 // NilArgument is a simplified version of "InvalidArgument".
@@ -77,11 +77,8 @@ func NilArgument(argument string) error {
 	if argument == "" {
 		return nil
 	}
-
 	reason := "nil is not allowed"
-	err := &InvalidArgumentError{Argument: argument, Reason: reason}
-	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
-	return err
+	return invalidArgumentError(argument, reason)
 }
 
 // MaybeInvalidArgument creates an `InvalidArgumentError` if cond is true.
@@ -89,10 +86,7 @@ func MaybeInvalidArgument(cond bool, argument string, reason string) error {
 	if !cond {
 		return nil
 	}
-
-	err := &InvalidArgumentError{Argument: argument, Reason: reason}
-	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
-	return err
+	return invalidArgumentError(argument, reason)
 }
 
 // MaybeNilArgument creates an `InvalidArgumentError` if argument is not nil.
@@ -102,7 +96,18 @@ func MaybeNilArgument(argument interface{}, name string) error {
 	}
 
 	reason := "nil is not allowed"
-	err := &InvalidArgumentError{Argument: name, Reason: reason}
-	err.Detail = detail.New(err, ErrInvalidArgument, 1, nil)
+	return invalidArgumentError(name, reason)
+}
+
+func invalidArgumentError(argument string, reason string) error {
+	err := &InvalidArgumentError{
+		Argument: argument,
+		Reason:   reason,
+	}
+	err.Detail = detail.New(
+		err,
+		detail.FlagAlias(ErrInvalidArgument),
+		detail.FlagStackTrace(2),
+	)
 	return err
 }
