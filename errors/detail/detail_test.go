@@ -11,21 +11,26 @@ import (
 func TestNew(t *testing.T) {
 	assert := assert.New(t)
 	{
-		det := detail.New(nil)
+		err := detail.New(nil)
+		assert.Error(err)
+		assert.Empty(err.Error())
+	}
+	{
+		det := detail.Make(nil)
 		err := error(&det)
 		assert.Error(err)
 		assert.Empty(err.Error())
 	}
 	{
 		msg := "whoops"
-		det := detail.New(msg)
+		det := detail.Make(msg)
 		err := error(&det)
 		assert.Error(err)
 		assert.Equal(msg, err.Error())
 	}
 	{
 		inn := errors.New("inner")
-		det := detail.New("whoops", detail.FlagInner(inn))
+		det := detail.Make("whoops", detail.FlagInner(inn))
 		err := error(&det)
 		assert.Error(err)
 		assert.Equal("whoops: inner", err.Error())
@@ -34,8 +39,8 @@ func TestNew(t *testing.T) {
 	{
 		inn := errors.New("inner")
 		ali := errors.New("alias")
-		mid := detail.New("bar", detail.FlagAlias(ali), detail.FlagStackTrace(0), detail.FlagInner(inn))
-		out := detail.New("foo", detail.FlagStackTrace(0), detail.FlagInner(&mid))
+		mid := detail.Make("bar", detail.FlagAlias(ali), detail.FlagStackTrace(0), detail.FlagInner(inn))
+		out := detail.Make("foo", detail.FlagStackTrace(0), detail.FlagInner(&mid))
 		err := error(&out)
 		assert.Error(err)
 		assert.Equal("foo: bar: inner", err.Error())

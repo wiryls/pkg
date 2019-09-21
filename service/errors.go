@@ -43,7 +43,7 @@ var whoops = oops{}
 // UnexpectedServiceState creates a StateError with detailed information.
 func (oops) UnexpectedServiceState(get State, expected ...State) error {
 	err := &UnexpectedStateError{Actual: get, Expected: expected}
-	err.Detail = detail.New(
+	err.Detail = detail.Make(
 		err,
 		detail.FlagAlias(ErrUnexpectedState),
 		detail.FlagStackTrace(1))

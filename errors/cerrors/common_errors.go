@@ -29,7 +29,7 @@ func Internal(message string, inner error) (err error) {
 		message = "internal error"
 		fallthrough
 	default:
-		return &InternalError{Detail: detail.New(
+		return &InternalError{Detail: detail.Make(
 			message,
 			detail.FlagAlias(ErrInternal),
 			detail.FlagInner(inner),
@@ -102,12 +102,10 @@ func MaybeNilArgument(argument interface{}, name string) error {
 func invalidArgumentError(argument string, reason string) error {
 	err := &InvalidArgumentError{
 		Argument: argument,
-		Reason:   reason,
-	}
-	err.Detail = detail.New(
+		Reason:   reason}
+	err.Detail = detail.Make(
 		err,
 		detail.FlagAlias(ErrInvalidArgument),
-		detail.FlagStackTrace(2),
-	)
+		detail.FlagStackTrace(2))
 	return err
 }

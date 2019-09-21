@@ -6,16 +6,28 @@ import (
 	"golang.org/x/xerrors"
 )
 
-// New detail error. It is used to create other errors with stack trace and
-// an inner error.
-func New(what interface{}, flags ...Flag) Detail {
+// New creates a detail error with optional stacktrace, an inner error,
+// alias and so on.
+func New(what interface{}, flags ...Flag) error {
 	detail := Detail{cause: what}
+	fill(&detail, flags...)
+	return &detail
+}
+
+// Make detail error. It is used to create other errors with stack trace and
+// an inner error.
+func Make(what interface{}, flags ...Flag) Detail {
+	detail := Detail{cause: what}
+	fill(&detail, flags...)
+	return detail
+}
+
+func fill(detail *Detail, flags ...Flag) {
 	for _, f := range flags {
 		if f != nil {
-			f(&detail)
+			f(detail)
 		}
 	}
-	return detail
 }
 
 // Detail error contains a message, stack traces and an inner error.
