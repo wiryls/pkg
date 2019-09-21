@@ -1,4 +1,4 @@
-package errors
+package qerrors
 
 import (
 	"github.com/wiryls/pkg/errors/detail"
@@ -16,6 +16,6 @@ func Wrap(inner error, msg string, alias error, skipCaller uint) error {
 		msg,
 		detail.FlagInner(inner),
 		detail.FlagAlias(alias),
-		detail.FlagStackTrace(skipCaller),
+		detail.FlagStackTrace(skipCaller+1),
 	)
 }

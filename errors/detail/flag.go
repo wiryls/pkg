@@ -11,7 +11,7 @@ type Flag func(*Detail)
 //  - `skip` top n stack trace.
 func FlagStackTrace(skip uint) Flag {
 	return func(err *Detail) {
-		caller := xerrors.Caller(int(skip + 1))
+		caller := xerrors.Caller(int(skip + 3))
 		err.frame = &caller
 	}
 }
