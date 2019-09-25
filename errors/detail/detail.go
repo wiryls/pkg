@@ -22,6 +22,7 @@ func Make(what interface{}, flags ...Flag) Detail {
 	return detail
 }
 
+// fill flags.
 func fill(detail *Detail, flags ...Flag) {
 	for _, f := range flags {
 		if f != nil {
@@ -31,7 +32,8 @@ func fill(detail *Detail, flags ...Flag) {
 }
 
 // Detail error contains a message, stack traces and an inner error.
-// Usually, it is used by other errors and should always be created by `New`.
+// Usually, it is used by other errors and should always be created by `Make`
+// or `New`.
 type Detail struct {
 	cause interface{}
 	alias error
@@ -72,7 +74,7 @@ func (e *Detail) FormatError(p xerrors.Printer) (next error) {
 	return e.inner
 }
 
-// Is enable alias.
+// Is compares this error with another. The alias will also be compared.
 func (e *Detail) Is(err error) bool {
 	return e.alias == err || e == err
 }
@@ -82,7 +84,7 @@ func (e *Detail) Unwrap() error {
 	return e.inner
 }
 
-// Cause is an alias of Unwrap. Maybe used in `pkg/errors`.
+// Cause is an alias of Unwrap. May be needed in `pkg/errors`.
 func (e *Detail) Cause() error {
 	return e.inner
 }
