@@ -6,7 +6,7 @@ import (
 	"github.com/wiryls/pkg/errors/detail"
 )
 
-// Message wraps an error with message, alias.
+// Message wraps an error with a message.
 //  - Return nil if `inner` is nil.
 //  - It uses `fmt.Errorf(msg+": %w", inner)` to create an error.
 func Message(inner error, msg string) error {
@@ -17,7 +17,7 @@ func Message(inner error, msg string) error {
 	return fmt.Errorf(msg+": %w", inner)
 }
 
-// MessageStack wraps an error with message, alias.
+// MessageStack wraps an error with a message, stack trace.
 //  - Return nil if `inner` is nil.
 //  - It creates a quick and simple detail.Detail error.
 func MessageStack(inner error, msg string, skipCaller uint) error {
@@ -32,7 +32,7 @@ func MessageStack(inner error, msg string, skipCaller uint) error {
 	)
 }
 
-// MessageAlias wraps an error with message, alias.
+// MessageAlias wraps an error with a message, alias.
 //  - Return nil if `inner` is nil.
 //  - It creates a quick and simple detail.Detail error.
 func MessageAlias(inner error, msg string, alias error) error {
@@ -47,7 +47,7 @@ func MessageAlias(inner error, msg string, alias error) error {
 	)
 }
 
-// MessageAliasStack wraps an error with message, alias and stacktrace.
+// MessageAliasStack wraps an error with a message, alias and stacktrace.
 //  - Return nil if `inner` is nil.
 //  - It creates a quick and simple detail.Detail error.
 func MessageAliasStack(inner error, msg string, alias error, skipCaller uint) error {

@@ -12,6 +12,7 @@ import (
 // error values.
 var (
 	ErrInternal        = errors.New("internal")
+	ErrUnimplement     = errors.New("unimplement")
 	ErrInvalidArgument = errors.New("invalid argument")
 )
 
