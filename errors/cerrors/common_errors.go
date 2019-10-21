@@ -2,6 +2,7 @@ package cerrors
 
 import (
 	"errors"
+	"reflect"
 
 	"github.com/wiryls/pkg/errors/detail"
 )
@@ -24,7 +25,7 @@ type InternalError struct{ detail.Detail }
 //  - Return nil if both `message` and `inner` are nil.
 func Internal(message string, inner error) (err error) {
 	switch {
-	case message == "" && inner == nil:
+	case message == "" && isNil(inner):
 		return
 	case message == "":
 		message = "internal error"
@@ -92,12 +93,11 @@ func MaybeInvalidArgument(cond bool, argument string, reason string) error {
 
 // MaybeNilArgument creates an `InvalidArgumentError` if argument is not nil.
 func MaybeNilArgument(argument interface{}, name string) error {
-	if argument != nil {
-		return nil
+	if isNil(argument) {
+		reason := "nil is not allowed"
+		return invalidArgumentError(name, reason)
 	}
-
-	reason := "nil is not allowed"
-	return invalidArgumentError(name, reason)
+	return nil
 }
 
 func invalidArgumentError(argument string, reason string) error {
@@ -109,4 +109,27 @@ func invalidArgumentError(argument string, reason string) error {
 		detail.FlagAlias(ErrInvalidArgument),
 		detail.FlagStackTrace(2))
 	return err
+}
+
+func isNil(i interface{}) bool {
+	isNil := false
+
+	if i == nil {
+		isNil = true
+	}
+
+	if isNil == false {
+		value := reflect.ValueOf(i)
+		switch value.Kind() {
+		case reflect.Ptr,
+			reflect.Slice,
+			reflect.Interface,
+			reflect.Map,
+			reflect.Chan,
+			reflect.Func:
+			isNil = value.IsNil()
+		}
+	}
+
+	return isNil
 }

@@ -77,3 +77,19 @@ func TestInternal(t *testing.T) {
 		}
 	}
 }
+
+func TestNormal(t *testing.T) {
+	assert := assert.New(t)
+	{
+		// NilArgument
+		var a *cerrors.InternalError
+		err := cerrors.MaybeNilArgument(a, "a")
+		assert.Error(err)
+		assert.True(errors.Is(err, cerrors.ErrInvalidArgument))
+	}
+	{
+		var a *cerrors.InternalError
+		err := cerrors.Internal("", a)
+		assert.NoError(err)
+	}
+}
