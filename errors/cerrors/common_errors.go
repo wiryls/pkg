@@ -41,7 +41,7 @@ func Internal(message string, inner error) (err error) {
 }
 
 // InvalidArgumentError is  of type invalid argument.
-//  - Please use `InvalidArgument` or `MaybeInvalidArgument` to create it.
+//  - Please use `InvalidArgument` or `TestInvalidArgument` to create it.
 type InvalidArgumentError struct {
 	Argument string
 	Reason   string
@@ -73,32 +73,50 @@ func InvalidArgument(argument string, reason string) error {
 	return invalidArgumentError(argument, reason)
 }
 
-// NilArgument is a simplified version of "InvalidArgument".
-//  - Return nil if `name` is not nil.
-func NilArgument(argument string) error {
-	if argument == "" {
-		return nil
-	}
-	reason := "nil is not allowed"
-	return invalidArgumentError(argument, reason)
-}
-
-// MaybeInvalidArgument creates an `InvalidArgumentError` if cond is true.
-func MaybeInvalidArgument(cond bool, argument string, reason string) error {
+// TestInvalidArgument creates an `InvalidArgumentError` if cond is true.
+func TestInvalidArgument(cond bool, argument string, reason string) error {
 	if !cond {
 		return nil
 	}
 	return invalidArgumentError(argument, reason)
 }
 
-// MaybeNilArgument creates an `InvalidArgumentError` if argument is not nil.
-func MaybeNilArgument(argument interface{}, name string) error {
+// NilArgument is a simplified version of "InvalidArgument".
+//  - Return nil if `name` is not nil.
+func NilArgument(argument string) error {
+	if argument == "" {
+		return nil
+	}
+	reason := reasonNilArgument
+	return invalidArgumentError(argument, reason)
+}
+
+// TestNilArgument creates an `InvalidArgumentError` if argument is not nil.
+func TestNilArgument(argument interface{}, name string) error {
 	if isNil(argument) {
-		reason := "nil is not allowed"
+		reason := reasonNilArgument
 		return invalidArgumentError(name, reason)
 	}
 	return nil
 }
+
+// TestNilArgumentIfNoErr is similar to `TestNilArgument` but it tests if err
+// is nil before checking the argument.
+func TestNilArgumentIfNoErr(err error, argument interface{}, name string) error {
+
+	if err != nil {
+		return err
+	}
+
+	if isNil(argument) {
+		reason := reasonNilArgument
+		return invalidArgumentError(name, reason)
+	}
+
+	return nil
+}
+
+const reasonNilArgument = "nil is not allowed"
 
 func invalidArgumentError(argument string, reason string) error {
 	err := &InvalidArgumentError{

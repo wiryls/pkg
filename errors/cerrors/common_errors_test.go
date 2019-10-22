@@ -83,7 +83,7 @@ func TestNormal(t *testing.T) {
 	{
 		// NilArgument
 		var a *cerrors.InternalError
-		err := cerrors.MaybeNilArgument(a, "a")
+		err := cerrors.TestNilArgument(a, "a")
 		assert.Error(err)
 		assert.True(errors.Is(err, cerrors.ErrInvalidArgument))
 	}
