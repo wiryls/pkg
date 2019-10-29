@@ -13,7 +13,7 @@ import (
 // error values.
 var (
 	ErrInternal        = errors.New("internal")
-	ErrUnimplement     = errors.New("unimplement")
+	ErrUnimplemented   = errors.New("unimplemented")
 	ErrInvalidArgument = errors.New("invalid argument")
 )
 
@@ -102,17 +102,15 @@ func TestNilArgument(argument interface{}, name string) error {
 
 // TestNilArgumentIfNoErr is similar to `TestNilArgument` but it tests if err
 // is nil before checking the argument.
+// Return err if err is not nil.
 func TestNilArgumentIfNoErr(err error, argument interface{}, name string) error {
-
 	if err != nil {
 		return err
 	}
-
 	if isNil(argument) {
 		reason := reasonNilArgument
 		return invalidArgumentError(name, reason)
 	}
-
 	return nil
 }
 
