@@ -1,6 +1,6 @@
-package service
+package lifecycle
 
-// Runnable is the operation of a Service.
+// Runnable contains three operations: BeforeRunning, Running, AfterRunning.
 type Runnable interface {
 
 	// BeforeRunning, do some initialization.

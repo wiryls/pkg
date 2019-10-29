@@ -1,4 +1,4 @@
-package service
+package lifecycle
 
 import (
 	"errors"
@@ -40,8 +40,8 @@ type oops struct{}
 
 var whoops = oops{}
 
-// UnexpectedServiceState creates a StateError with detailed information.
-func (oops) UnexpectedServiceState(get State, expected ...State) error {
+// UnexpectedState creates a StateError with detailed information.
+func (oops) UnexpectedState(get State, expected ...State) error {
 	err := &UnexpectedStateError{Actual: get, Expected: expected}
 	err.Detail = detail.Make(
 		err,

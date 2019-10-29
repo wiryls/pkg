@@ -1,4 +1,4 @@
-package service
+package lifecycle
 
 import (
 	"strconv"
@@ -6,10 +6,10 @@ import (
 	"sync/atomic"
 )
 
-// State of service.
+// State of lifecycle.
 type State uint32
 
-// Service States.
+// LifeCycle States.
 const (
 	StateStopped State = iota
 	StateBooting
@@ -41,9 +41,9 @@ func (s *State) atomicGet() State {
 	return State(atomic.LoadUint32((*uint32)(s)))
 }
 
-// Service is a helper for building service like object.
-// Just create a `Service` and bind it to a `Callback`.
-type Service struct {
+// LifeCycle is a helper for building service like object.
+// Just create a `LifeCycle` and bind it to a `Callback`.
+type LifeCycle struct {
 	runn Runnable
 
 	lock sync.RWMutex
@@ -56,9 +56,9 @@ type Service struct {
 }
 
 // Bind a `Callback` to this runner.
-//  - Calling it while service running may be blocked.
-//  - See `service.Callback` for more details.
-func (s *Service) Bind(runnable Runnable) *Service {
+//  - Invoke it while running may be blocked.
+//  - See `lifecycle.Callback` for more details.
+func (s *LifeCycle) Bind(runnable Runnable) *LifeCycle {
 	defer s.lock.Unlock()
 	/*_*/ s.lock.Lock()
 
@@ -67,13 +67,13 @@ func (s *Service) Bind(runnable Runnable) *Service {
 }
 
 // State of this `Runner`.
-func (s *Service) State() State {
+func (s *LifeCycle) State() State {
 	return s.stat.atomicGet()
 }
 
 // Run this `Runner`.
 //  - Caller will be blocked until error happens or `Close` is called.
-func (s *Service) Run() (err error) {
+func (s *LifeCycle) Run() (err error) {
 	defer s.lerr.Unlock()
 	/*_*/ s.lerr.Lock()
 	/*_*/ s.cerr = nil
@@ -105,13 +105,13 @@ func (s *Service) Run() (err error) {
 	return
 }
 
-// WhileRunning do something.
-func (s *Service) WhileRunning(f func() error) (err error) {
+// WhileRunning do something if it is running.
+func (s *LifeCycle) WhileRunning(f func() error) (err error) {
 	defer s.lock.RUnlock()
 	/*_*/ s.lock.RLock()
 
 	if err == nil && s.stat != StateRunning {
-		err = whoops.UnexpectedServiceState(s.stat, StateRunning)
+		err = whoops.UnexpectedState(s.stat, StateRunning)
 	}
 
 	if err == nil && f != nil {
@@ -121,14 +121,33 @@ func (s *Service) WhileRunning(f func() error) (err error) {
 	return
 }
 
+// WhileRunningChan do something if it is running. It provides a readonly
+// channel to check if it stops.
+func (s *LifeCycle) WhileRunningChan(
+	f func(cancel <-chan struct{}) error,
+) (err error) {
+	defer s.lock.RUnlock()
+	/*_*/ s.lock.RLock()
+
+	if err == nil && s.stat != StateRunning {
+		err = whoops.UnexpectedState(s.stat, StateRunning)
+	}
+
+	if err == nil && f != nil {
+		err = f(s.exit)
+	}
+
+	return
+}
+
 // CloseAsync sends a signal to close this runner asynchronously.
 // This is a non-block version of `Close`.
-//  - Only `ErrServiceStopped` may be returned.
-func (s *Service) CloseAsync() error {
+//  - Only an `ErrUnexpectedState` with a `StateStopped` may be returned.
+func (s *LifeCycle) CloseAsync() error {
 
 	// fast check stat
 	if s.stat.atomicGet() == StateStopped {
-		return whoops.UnexpectedServiceState(StateStopped)
+		return whoops.UnexpectedState(StateStopped)
 	}
 
 	// notify looping to exit.
@@ -141,10 +160,10 @@ func (s *Service) CloseAsync() error {
 	return nil
 }
 
-// Close this Service and wait until stop running.
+// Close this LifeCycle and wait until stop running.
 //  - Use it from its `Callback` may cause deadlock. Please use
 //    `CloseAsync()` instead.
-func (s *Service) Close() error {
+func (s *LifeCycle) Close() error {
 
 	err := s.CloseAsync()
 	if err != nil {
@@ -157,31 +176,31 @@ func (s *Service) Close() error {
 	return s.cerr
 }
 
-// BeforeRunning is the default do nothing method. If users of `Runner`
-// create their service like:
+// BeforeRunning is the default do nothing method. If we create our object
+// like:
 //
-//     type sample struct{
-// 	    service.Runner
+//     type service struct{
+// 	     lifecycle.LifeCycle
 //     }
 //
-// This function provide a default `BeforeRunning()` for `sample`.
-func (s *Service) BeforeRunning() error { return nil }
+// This function provide a default `BeforeRunning()` for `service`.
+func (s *LifeCycle) BeforeRunning() error { return nil }
 
-// AfterRunning is the default do nothing method. If users of `Runner`
-// create their service like:
+// AfterRunning is the default do nothing method. If we create our object
+// like:
 //
-//     type sample struct{
-// 	    service.Runner
+//     type service struct{
+// 	     lifecycle.LifeCycle
 //     }
 //
-// This function provide a default `AfterRunning()` for `sample`.
-func (s *Service) AfterRunning() error { return nil }
+// This function provide a default `AfterRunning()` for `service`.
+func (s *LifeCycle) AfterRunning() error { return nil }
 
 // from StateStopped to StateBooting and then StateRunning
-func (s *Service) onBooting() (err error) {
+func (s *LifeCycle) onBooting() (err error) {
 	// fast check stat
 	if stat := s.stat.atomicGet(); stat != StateStopped {
-		return whoops.UnexpectedServiceState(s.stat, StateStopped)
+		return whoops.UnexpectedState(s.stat, StateStopped)
 	}
 
 	// slow path booting
@@ -189,7 +208,7 @@ func (s *Service) onBooting() (err error) {
 	/*_*/ s.lock.Lock()
 
 	if s.stat == StateStopped {
-		// [0] stat,
+		// [0] set stat
 		defer s.stat.atomicSet(StateRunning)
 		/*_*/ s.stat.atomicSet(StateBooting)
 
@@ -207,10 +226,10 @@ func (s *Service) onBooting() (err error) {
 }
 
 // keep running, stat won't be changed.
-func (s *Service) onRunning() (err error) {
+func (s *LifeCycle) onRunning() (err error) {
 	// fast check stat
 	if stat := s.stat.atomicGet(); stat != StateRunning {
-		return whoops.UnexpectedServiceState(s.stat, StateRunning)
+		return whoops.UnexpectedState(s.stat, StateRunning)
 	}
 
 	// slow path running
@@ -225,10 +244,10 @@ func (s *Service) onRunning() (err error) {
 }
 
 // from StateRunning to StateClosing
-func (s *Service) onClosing() (err error) {
+func (s *LifeCycle) onClosing() (err error) {
 	// fast check stat
 	if stat := s.stat.atomicGet(); stat != StateRunning {
-		return whoops.UnexpectedServiceState(s.stat, StateRunning)
+		return whoops.UnexpectedState(s.stat, StateRunning)
 	}
 
 	// slow path closing
