@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+
 	"github.com/wiryls/pkg/lifecycle"
 )
 
@@ -25,24 +26,29 @@ func TestNoCallback(t *testing.T) {
 
 /////////////////////////////////////////////////////////////////////////////
 
-type Dummy dummy
+type Dummy interface {
+	lifecycle.RunnerCloser
+
+	State() lifecycle.State
+	HanldePing() error
+	HanldeClose() error
+}
+
+func NewDummy() Dummy {
+	d := &dummy{}
+	d.Bind(d)
+	return d
+}
+
 type dummy struct {
+	// lifecycle
 	lifecycle.LifeCycle
 
+	// data
 	input chan chan<- bool
 }
 
-func NewDummy() *Dummy {
-	d := &dummy{}
-	d.Bind(d)
-	return (*Dummy)(d)
-}
-
-func (d *Dummy) Run() error {
-	return d.LifeCycle.Run()
-}
-
-func (d *Dummy) HanldePing() error {
+func (d *dummy) HanldePing() error {
 	return d.LifeCycle.WhileRunningChan(func(done <-chan struct{}) error {
 		something := make(chan bool)
 
@@ -60,19 +66,22 @@ func (d *Dummy) HanldePing() error {
 	})
 }
 
-func (d *Dummy) HanldeClose() error {
+func (d *dummy) HanldeClose() error {
 	return d.LifeCycle.WhileRunning(func() error {
 		return d.LifeCycle.CloseAsync()
 	})
 }
 
-func (d *Dummy) State() lifecycle.State { return d.LifeCycle.State() }
-
-func (d *Dummy) Close() error { return d.LifeCycle.Close() }
-
 func (d *dummy) BeforeRunning() error {
 	d.input = make(chan chan<- bool)
 	time.Sleep(10 * time.Millisecond)
+	return nil
+}
+
+func (d *dummy) AfterRunning() error {
+	time.Sleep(10 * time.Millisecond)
+	close(d.input)
+	d.input = nil
 	return nil
 }
 
@@ -94,13 +103,6 @@ loop:
 		}
 	}
 
-	return nil
-}
-
-func (d *dummy) AfterRunning() error {
-	time.Sleep(10 * time.Millisecond)
-	close(d.input)
-	d.input = nil
 	return nil
 }
 

@@ -7,27 +7,32 @@ Please see [lifecycle_test](./lifecycle_test.go).
 ## Sample
 
 ```golang
+
 // Service is a service like dummy object. It uses `lifecycle.LifeCycle` to run and close.
-type Service service
+type Service interface {
+    lifecycle.RunnerCloser
+
+    State() lifecycle.State
+    HanldePing() error
+    HanldeClose() error
+}
+
+// New Service.
+func New() Service {
+    s := &service{}
+    s.Bind(s)
+    return s
+}
+
 type service struct {
+    // lifecycle
     lifecycle.LifeCycle
 
+    // data
     input chan chan<- bool
 }
 
-func NewService() *Service {
-    s := &service{}
-    s.Bind(s)
-    return (*Service)(s)
-}
-
-func (s *Service) Run() error { return s.LifeCycle.Run() }
-
-func (s *Service) State() lifecycle.State { return s.LifeCycle.State() }
-
-func (s *Service) Close() error { return s.LifeCycle.Close() }
-
-func (s *Service) HanldePing() error {
+func (s *service) HanldePing() error {
     return s.LifeCycle.WhileRunningChan(func(done <-chan struct{}) error {
         something := make(chan bool)
 
@@ -45,7 +50,7 @@ func (s *Service) HanldePing() error {
     })
 }
 
-func (s *Service) HanldeClose() error {
+func (s *service) HanldeClose() error {
     return s.LifeCycle.WhileRunning(func() error {
         return s.LifeCycle.CloseAsync()
     })
@@ -78,8 +83,9 @@ loop:
 }
 
 func (s *service) AfterRunning() error {
-    close(d.input)
-    d.input = nil
+    close(s.input)
+    s.input = nil
     return nil
 }
+
 ```
