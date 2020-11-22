@@ -40,7 +40,7 @@ func Internal(message string, inner error) (err error) {
 	}
 }
 
-// InvalidArgumentError is  of type invalid argument.
+// InvalidArgumentError is of type invalid argument.
 //  - Please use `InvalidArgument` or `TestInvalidArgument` to create it.
 type InvalidArgumentError struct {
 	Argument string
