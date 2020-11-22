@@ -1,18 +1,18 @@
-# lifecycle
+# runner
 
-The `lifecycle.LifeCycle` in this package is responsible for lifecycle management.
+The `runner.Determination` in this package is responsible for runner management.
 
-Please see [lifecycle_test](./lifecycle_test.go).
+Please see [runner_test](./runner_test.go).
 
 ## Sample
 
 ```golang
 
-// Service is a service like dummy object. It uses `lifecycle.LifeCycle` to run and close.
+// Service is a service like dummy object. It uses `runner.Determination` to run and close.
 type Service interface {
-    lifecycle.RunnerCloser
+    runner.RunnerCloser
 
-    State() lifecycle.State
+    State() runner.State
     HanldePing() error
     HanldeClose() error
 }
@@ -25,25 +25,25 @@ func New() Service {
 }
 
 type service struct {
-    // lifecycle
-    lifecycle.LifeCycle
+    // runner
+    runner.Determination
 
     // data
     input chan chan<- bool
 }
 
 func (s *service) HanldePing() error {
-    return s.LifeCycle.WhileRunningChan(func(done <-chan struct{}) error {
+    return s.Determination.WhileRunning(func(exit <-chan struct{}) error {
         something := make(chan bool)
 
         select {
         case s.input <- something:
-        case <-done:
+        case <-exit:
         }
 
         select {
         case <-something:
-        case <-done:
+        case <-exit:
         }
 
         return nil
@@ -51,8 +51,8 @@ func (s *service) HanldePing() error {
 }
 
 func (s *service) HanldeClose() error {
-    return s.LifeCycle.WhileRunning(func() error {
-        return s.LifeCycle.CloseAsync()
+    return s.Determination.WhileRunning(func() error {
+        return s.Determination.CloseAsync()
     })
 }
 
@@ -61,7 +61,7 @@ func (s *service) BeforeRunning() error {
     return nil
 }
 
-func (s *service) Running(cancel <-chan struct{}) error {
+func (s *service) Running(exit <-chan struct{}) error {
 
 loop:
     for {
@@ -72,9 +72,10 @@ loop:
             case in <- true:
                 close(in)
             case <-time.After(time.Second):
+            case <-exit:
             }
 
-        case <-cancel:
+        case <-exit:
             break loop
         }
     }

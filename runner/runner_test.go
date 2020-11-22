@@ -1,4 +1,4 @@
-package lifecycle_test
+package runner_test
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/wiryls/pkg/lifecycle"
+	"github.com/wiryls/pkg/runner"
 )
 
 // SUGGEST using data race detector to run this test.
@@ -17,8 +17,8 @@ import (
 func TestNoCallback(t *testing.T) {
 	assert := assert.New(t)
 
-	srv := lifecycle.LifeCycle{}
-	assert.EqualValues(srv.State(), lifecycle.StateStopped)
+	srv := runner.Determination{}
+	assert.EqualValues(srv.State(), runner.StateStopped)
 	assert.Error(srv.Close())
 	assert.Error(srv.WhileRunning(nil))
 	assert.NoError(srv.Run())
@@ -27,9 +27,9 @@ func TestNoCallback(t *testing.T) {
 /////////////////////////////////////////////////////////////////////////////
 
 type Dummy interface {
-	lifecycle.RunnerCloser
+	runner.Runner
 
-	State() lifecycle.State
+	State() runner.State
 	HanldePing() error
 	HanldeClose() error
 }
@@ -41,15 +41,15 @@ func NewDummy() Dummy {
 }
 
 type dummy struct {
-	// lifecycle
-	lifecycle.LifeCycle
+	// runner
+	runner.Determination
 
 	// data
 	input chan chan<- bool
 }
 
 func (d *dummy) HanldePing() error {
-	return d.LifeCycle.WhileRunningChan(func(done <-chan struct{}) error {
+	return d.Determination.WhileRunning(func(done <-chan struct{}) error {
 		something := make(chan bool)
 
 		select {
@@ -67,14 +67,17 @@ func (d *dummy) HanldePing() error {
 }
 
 func (d *dummy) HanldeClose() error {
-	return d.LifeCycle.WhileRunning(func() error {
-		return d.LifeCycle.CloseAsync()
+	return d.Determination.WhileRunning(func(<-chan struct{}) error {
+		return d.Determination.CloseAsync()
 	})
 }
 
-func (d *dummy) BeforeRunning() error {
+func (d *dummy) BeforeRunning(exit <-chan struct{}) error {
 	d.input = make(chan chan<- bool)
-	time.Sleep(10 * time.Millisecond)
+	select {
+	case <-time.After(10 * time.Millisecond):
+	case <-exit:
+	}
 	return nil
 }
 
@@ -85,7 +88,7 @@ func (d *dummy) AfterRunning() error {
 	return nil
 }
 
-func (d *dummy) Running(cancel <-chan struct{}) error {
+func (d *dummy) Running(exit <-chan struct{}) error {
 
 loop:
 	for {
@@ -96,9 +99,10 @@ loop:
 			case in <- true:
 				close(in)
 			case <-time.After(time.Second):
+			case <-exit:
 			}
 
-		case <-cancel:
+		case <-exit:
 			break loop
 		}
 	}
@@ -110,7 +114,7 @@ func TestDummyService(t *testing.T) {
 	assert := assert.New(t)
 	{ // Not Running
 		srv := NewDummy()
-		assert.EqualValues(srv.State(), lifecycle.StateStopped)
+		assert.EqualValues(srv.State(), runner.StateStopped)
 		assert.Error(srv.Close())
 		assert.Error(srv.HanldePing())
 		assert.Error(srv.HanldeClose())
@@ -118,16 +122,16 @@ func TestDummyService(t *testing.T) {
 
 	{ // CloseAsync
 		srv := NewDummy()
-		assert.EqualValues(srv.State(), lifecycle.StateStopped)
+		assert.EqualValues(srv.State(), runner.StateStopped)
 
 		c := make(chan error, 100)
 		go func() { c <- srv.Run() }()
 
 		time.Sleep(5 * time.Millisecond)
-		assert.EqualValues(srv.State(), lifecycle.StateBooting)
+		assert.EqualValues(srv.State(), runner.StateBooting)
 
 		time.Sleep(10 * time.Millisecond)
-		assert.EqualValues(srv.State(), lifecycle.StateRunning)
+		assert.EqualValues(srv.State(), runner.StateRunning)
 
 		for i := 0; i < 98; i++ {
 			go func() { c <- srv.HanldePing() }()
@@ -136,7 +140,7 @@ func TestDummyService(t *testing.T) {
 		go func() { c <- srv.HanldeClose() }()
 
 		time.Sleep(14 * time.Millisecond)
-		assert.EqualValues(srv.State(), lifecycle.StateStopped)
+		assert.EqualValues(srv.State(), runner.StateStopped)
 
 	out:
 		for {
@@ -155,22 +159,22 @@ func TestDummyService(t *testing.T) {
 
 	{ // Close
 		srv := NewDummy()
-		assert.EqualValues(srv.State(), lifecycle.StateStopped)
+		assert.EqualValues(srv.State(), runner.StateStopped)
 
 		c := make(chan error)
 		go func() { c <- srv.Run() }()
 
 		time.Sleep(5 * time.Millisecond)
-		assert.EqualValues(srv.State(), lifecycle.StateBooting)
+		assert.EqualValues(srv.State(), runner.StateBooting)
 
 		time.Sleep(10 * time.Millisecond)
-		assert.EqualValues(srv.State(), lifecycle.StateRunning)
+		assert.EqualValues(srv.State(), runner.StateRunning)
 
 		assert.NoError(srv.Close())
 		assert.NoError(<-c)
 
 		time.Sleep(15 * time.Millisecond)
-		assert.EqualValues(srv.State(), lifecycle.StateStopped)
+		assert.EqualValues(srv.State(), runner.StateStopped)
 		assert.Error(srv.Close())
 		assert.Error(srv.HanldePing())
 	}
