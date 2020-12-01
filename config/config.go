@@ -5,16 +5,16 @@ import (
 	"encoding/json"
 )
 
-// Serializer has
-type Serializer interface {
+// Marshaler for provide a set of method to Marshal and Unmarshal.
+type Marshaler interface {
 	CanMarshal(tag string, val interface{}) bool
 	Marshal(val interface{}) ([]byte, error)
 	CanUnmarshal(tag string, bin []byte) bool
 	Unmarshal(bin []byte, val interface{}) error
 }
 
-// Serializers is used to read or write configs from files.
-type Serializers []Serializer
+// Marshalers is used to read or write configs from files.
+type Marshalers []Marshaler
 
 // export default methods.
 var (
@@ -26,11 +26,11 @@ var (
 
 ////////////////////////////// the default //////////////////////////////////
 
-var defaults = Serializers{
+var defaults = Marshalers{
 	&Wrapper{
-		TestEncode: func(tag string, _ interface{}) bool { return tag == "json" },
-		TestDecode: func(tag string, _ []byte) bool { return tag == "json" },
-		Decode:     json.Unmarshal,
+		CanEnc: func(tag string, _ interface{}) bool { return tag == "json" },
+		CanDec: func(tag string, ______ []byte) bool { return tag == "json" },
+		Decode: json.Unmarshal,
 		Encode: func(val interface{}) ([]byte, error) {
 			buf := new(bytes.Buffer)
 			enc := json.NewEncoder(buf)
@@ -45,17 +45,17 @@ var defaults = Serializers{
 	},
 }
 
-// Wrapper provide a simple way to create Serializer.
+// Wrapper provide a simple way to create Marshaler.
 type Wrapper struct {
-	TestEncode func(tag string, val interface{}) bool
-	TestDecode func(tag string, bin []byte) bool
-	Encode     func(val interface{}) ([]byte, error)
-	Decode     func(bin []byte, val interface{}) error
+	CanEnc func(tag string, val interface{}) bool
+	CanDec func(tag string, bin []byte) bool
+	Encode func(val interface{}) ([]byte, error)
+	Decode func(bin []byte, val interface{}) error
 }
 
 // CanMarshal test if it can marshal val.
 func (w *Wrapper) CanMarshal(tag string, val interface{}) bool {
-	return w.TestEncode(tag, val)
+	return w.CanEnc(tag, val)
 }
 
 // Marshal object to bytes.
@@ -65,7 +65,7 @@ func (w *Wrapper) Marshal(val interface{}) ([]byte, error) {
 
 // CanUnmarshal test if it can unmarshal.
 func (w *Wrapper) CanUnmarshal(tag string, bin []byte) bool {
-	return w.TestDecode(tag, bin)
+	return w.CanDec(tag, bin)
 }
 
 // Unmarshal bytes to object.

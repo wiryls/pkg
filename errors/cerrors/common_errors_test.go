@@ -11,12 +11,12 @@ import (
 func TestInternal(t *testing.T) {
 	assert := assert.New(t)
 	{
-		err := cerrors.Internal("", nil)
+		err := cerrors.Internal(nil, "")
 		assert.NoError(err)
 	}
 	{
 		msg := "internal"
-		err := cerrors.Internal(msg, nil)
+		err := cerrors.Internal(nil, msg)
 		assert.Error(err)
 
 		internal := (*cerrors.InternalError)(nil)
@@ -29,16 +29,16 @@ func TestInternal(t *testing.T) {
 		level0 := cerrors.NilArgument("orz")
 		assert.Error(level0)
 		assert.Nil(errors.Unwrap(level0))
-		assert.Equal("argument `orz`, nil is not allowed", level0.Error())
+		assert.Equal("argument 'orz', nil is not allowed", level0.Error())
 
-		level1 := cerrors.Internal("inner", level0)
+		level1 := cerrors.Internal(level0, "inner")
 		assert.Error(level1)
 		assert.Equal(level0, errors.Unwrap(level1))
-		assert.Equal("inner: argument `orz`, nil is not allowed", level1.Error())
+		assert.Equal("inner: argument 'orz', nil is not allowed", level1.Error())
 
-		level2 := cerrors.Internal("outter", level1)
+		level2 := cerrors.Internal(level1, "outter")
 		assert.Error(level2)
-		assert.Equal("outter: inner: argument `orz`, nil is not allowed", level2.Error())
+		assert.Equal("outter: inner: argument 'orz', nil is not allowed", level2.Error())
 
 		var e0 *cerrors.InvalidArgumentError
 		assert.True(errors.As(level2, &e0))
@@ -60,20 +60,20 @@ func TestInternal(t *testing.T) {
 		type IAE = cerrors.InvalidArgumentError
 		type IE = cerrors.InternalError
 		iae := cerrors.InvalidArgument("bar", "baz")
-		err := cerrors.Internal("foo", iae)
+		err := cerrors.Internal(iae, "foo")
 		assert.True(errors.Is(err, cerrors.ErrInvalidArgument))
 		assert.True(errors.Is(err, cerrors.ErrInternal))
 
 		if out := (*IE)(nil); errors.As(err, &out) {
 			assert.Equal(err, out)
 		} else {
-			assert.Fail("`errors.As` failed")
+			assert.Fail("'errors.As' failed")
 		}
 
 		if out := (*IAE)(nil); errors.As(err, &out) {
 			assert.Equal(iae, out)
 		} else {
-			assert.Fail("`errors.As` failed")
+			assert.Fail("'errors.As' failed")
 		}
 	}
 }
@@ -89,7 +89,7 @@ func TestNormal(t *testing.T) {
 	}
 	{
 		var a *cerrors.InternalError
-		err := cerrors.Internal("", a)
+		err := cerrors.Internal(a, "")
 		assert.NoError(err)
 	}
 }

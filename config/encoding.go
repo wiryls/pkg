@@ -12,7 +12,7 @@ import (
 )
 
 // Save writes the configuration to target path.
-func (s Serializers) Save(src interface{}, dst string) (err error) {
+func (s Marshalers) Save(src interface{}, dst string) (err error) {
 	err = cerrors.TestNilArgumentIfNoErr(err, src, "src interface{}")
 	if err == nil {
 		err = s.toFile(dst, src)
@@ -21,7 +21,7 @@ func (s Serializers) Save(src interface{}, dst string) (err error) {
 }
 
 // Load a configuration form target path.
-func (s Serializers) Load(dst interface{}, src string) (err error) {
+func (s Marshalers) Load(dst interface{}, src string) (err error) {
 	err = cerrors.TestNilArgumentIfNoErr(err, dst, "dst interface{}")
 	if err == nil {
 		err = s.fromFile(src, dst)
@@ -30,7 +30,7 @@ func (s Serializers) Load(dst interface{}, src string) (err error) {
 }
 
 // LoadSome reads a list of files and finds the first valid one as configuration.
-func (s Serializers) LoadSome(dst interface{}, list []string) (path string, err error) {
+func (s Marshalers) LoadSome(dst interface{}, list []string) (path string, err error) {
 
 	err = cerrors.TestNilArgumentIfNoErr(err, list, "list []string")
 	err = cerrors.TestNilArgumentIfNoErr(err, dst, "dst interface{}")
@@ -64,7 +64,7 @@ func (s Serializers) LoadSome(dst interface{}, list []string) (path string, err 
 
 // LoadOrSaveSome trys to read a config from some paths.
 // If failed, save dst to the first valid path.
-func (s Serializers) LoadOrSaveSome(data interface{}, list []string) (path string, find bool, err error) {
+func (s Marshalers) LoadOrSaveSome(data interface{}, list []string) (path string, find bool, err error) {
 
 	if err == nil {
 		path, err = s.LoadSome(data, list)
@@ -82,7 +82,7 @@ func (s Serializers) LoadOrSaveSome(data interface{}, list []string) (path strin
 	return
 }
 
-func (s Serializers) fromFile(path string, target interface{}) (err error) {
+func (s Marshalers) fromFile(path string, target interface{}) (err error) {
 	var buf io.ReadCloser
 
 	if err == nil {
@@ -103,7 +103,7 @@ func (s Serializers) fromFile(path string, target interface{}) (err error) {
 	return
 }
 
-func (s Serializers) toFile(path string, src interface{}) (err error) {
+func (s Marshalers) toFile(path string, src interface{}) (err error) {
 	var buf io.WriteCloser
 
 	if err == nil {
@@ -119,7 +119,7 @@ func (s Serializers) toFile(path string, src interface{}) (err error) {
 	return
 }
 
-func (s Serializers) fromReader(name string, r io.Reader, dst interface{}) (err error) {
+func (s Marshalers) fromReader(name string, r io.Reader, dst interface{}) (err error) {
 
 	err = cerrors.TestNilArgumentIfNoErr(err, r, "r io.Reader")
 	err = cerrors.TestNilArgumentIfNoErr(err, dst, "dst interface{}")
@@ -133,7 +133,7 @@ func (s Serializers) fromReader(name string, r io.Reader, dst interface{}) (err 
 	return s.fromBytes(name, bin, dst)
 }
 
-func (s Serializers) toWriter(name string, w io.Writer, src interface{}) (err error) {
+func (s Marshalers) toWriter(name string, w io.Writer, src interface{}) (err error) {
 
 	err = cerrors.TestNilArgumentIfNoErr(err, w, "w io.Writer")
 	err = cerrors.TestNilArgumentIfNoErr(err, src, "src interface{}")
@@ -151,7 +151,7 @@ func (s Serializers) toWriter(name string, w io.Writer, src interface{}) (err er
 	return
 }
 
-func (s Serializers) fromBytes(name string, bin []byte, dst interface{}) (err error) {
+func (s Marshalers) fromBytes(name string, bin []byte, dst interface{}) (err error) {
 
 	err = cerrors.TestNilArgumentIfNoErr(err, bin, "bin []byte")
 	err = cerrors.TestNilArgumentIfNoErr(err, dst, "dst interface{}")
@@ -172,7 +172,7 @@ func (s Serializers) fromBytes(name string, bin []byte, dst interface{}) (err er
 	return wrap.MessageStack(ErrDecoding, "file not support `"+name+"`", 0)
 }
 
-func (s Serializers) toBytes(name string, src interface{}) (bin []byte, err error) {
+func (s Marshalers) toBytes(name string, src interface{}) (bin []byte, err error) {
 
 	err = cerrors.TestNilArgumentIfNoErr(err, src, "src interface{}")
 

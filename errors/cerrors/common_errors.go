@@ -3,6 +3,7 @@ package cerrors
 import (
 	"errors"
 	"reflect"
+	"strings"
 
 	"github.com/wiryls/pkg/errors/detail"
 )
@@ -23,7 +24,7 @@ type InternalError struct{ detail.Detail }
 
 // Internal creates a wrapped `ErrInternal` with detailed information.
 //  - Return nil if both `message` and `inner` are nil.
-func Internal(message string, inner error) (err error) {
+func Internal(inner error, message string) (err error) {
 	switch {
 	case message == "" && isNil(inner):
 		return
@@ -50,11 +51,13 @@ type InvalidArgumentError struct {
 
 // Error override the error interface to custom message.
 func (e *InvalidArgumentError) Error() string {
+	escape := func(src string) string { return strings.Replace(src, "'", "\\'", 0) }
+
 	switch {
 	case e.Argument != "" && e.Reason != "":
-		return "argument `" + e.Argument + "`, " + e.Reason
+		return "argument '" + escape(e.Argument) + "', " + e.Reason
 	case e.Argument != "":
-		return "argument `" + e.Argument + "` is invalid"
+		return "argument '" + escape(e.Argument) + " is invalid"
 	case e.Reason != "":
 		return "invalid argument, " + e.Reason
 	default:
