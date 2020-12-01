@@ -33,10 +33,15 @@ func (s *Determination) Run() (err error) {
 
 // WhileRunning do something if it is running. It provides a readonly
 // channel to check if it stops.
-func (s *Determination) WhileRunning(
-	do func(exit <-chan struct{}) error,
-) (err error) {
-	return s.whilerunning(func() error { return do(s.exit) })
+func (s *Determination) WhileRunning(do func(<-chan struct{}) error) error {
+	return s.whilerunning(func() error {
+		select {
+		case <-s.exit:
+			return ErrRunnerIsClosing
+		default:
+			return do(s.exit)
+		}
+	})
 }
 
 // CloseAsync sends a signal to close this runner asynchronously.

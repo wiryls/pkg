@@ -10,6 +10,7 @@ import (
 // Error values.
 var (
 	ErrUnexpectedState = errors.New("unexpected state")
+	ErrRunnerIsClosing = errors.New("runner is closing")
 )
 
 // UnexpectedStateError is an error when unexpected states happen.

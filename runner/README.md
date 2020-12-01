@@ -7,10 +7,9 @@ Please see [runner_test](./runner_test.go).
 ## Sample
 
 ```golang
-
 // Service is a service like dummy object. It uses `runner.Determination` to run and close.
 type Service interface {
-    runner.RunnerCloser
+    runner.Runner
 
     State() runner.State
     HanldePing() error
@@ -51,7 +50,7 @@ func (s *service) HanldePing() error {
 }
 
 func (s *service) HanldeClose() error {
-    return s.Determination.WhileRunning(func() error {
+    return s.Determination.WhileRunning(func(<-chan struct{}) error {
         return s.Determination.CloseAsync()
     })
 }

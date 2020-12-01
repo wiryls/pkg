@@ -10,10 +10,12 @@ import (
 type DeterminationWithContext struct {
 	shared
 
+	// remain immutable
 	rctx context.Context
 	runn RunnableWithContext
 
-	ctxt context.Context
+	// always created when booting
+	sctx context.Context
 	exit func()
 }
 
@@ -42,8 +44,15 @@ func (s *DeterminationWithContext) Run() (err error) {
 
 // WhileRunning do something if it is running. It provides a context
 // o check if it stops.
-func (s *DeterminationWithContext) WhileRunning(do func(ctx context.Context) error) error {
-	return s.whilerunning(func() error { return do(s.ctxt) })
+func (s *DeterminationWithContext) WhileRunning(do func(context.Context) error) error {
+	return s.whilerunning(func() error {
+		select {
+		case <-s.sctx.Done():
+			return ErrRunnerIsClosing
+		default:
+			return do(s.sctx)
+		}
+	})
 }
 
 // CloseAsync sends a signal to close this runner asynchronously.
@@ -82,22 +91,22 @@ func (s *DeterminationWithContext) AfterRunning() error { return nil }
 
 func (s *DeterminationWithContext) prepare() {
 	if s.rctx != nil {
-		s.ctxt, s.exit = context.WithCancel(s.rctx)
+		s.sctx, s.exit = context.WithCancel(s.rctx)
 	} else {
-		s.ctxt, s.exit = context.WithCancel(context.Background())
+		s.sctx, s.exit = context.WithCancel(context.Background())
 	}
 }
 
 func (s *DeterminationWithContext) booting() (err error) {
 	if s.runn != nil {
-		err = s.runn.BeforeRunning(s.ctxt)
+		err = s.runn.BeforeRunning(s.sctx)
 	}
 	return
 }
 
 func (s *DeterminationWithContext) running() (err error) {
 	if s.runn != nil {
-		err = s.runn.Running(s.ctxt)
+		err = s.runn.Running(s.sctx)
 	}
 	return
 }
