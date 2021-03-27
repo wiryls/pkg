@@ -8,8 +8,8 @@ type I generic.Type
 // O the output type
 type O generic.Type
 
-// ForwardOne trys to fetch input from src, map it and send it to dst.
-func ForwardOne(source <-chan I, destination chan<- O, mapping func(I) O) {
+// Forward trys to fetch input from src, map it and send it to dst.
+func Forward(source <-chan I, destination chan<- O, mapping func(I) O) {
 	var (
 		todo      []I
 		done      []O
@@ -57,8 +57,8 @@ func ForwardOne(source <-chan I, destination chan<- O, mapping func(I) O) {
 	}
 }
 
-// ForwardSome trys to fetch input from src, map it and send it to dst.
-func ForwardSome(source <-chan []I, destination chan<- []O, mapping func(I) O) {
+// ForwardSlice trys to fetch input from src, map it and send it to dst.
+func ForwardSlice(source <-chan []I, destination chan<- []O, mapping func(I) O) {
 	var (
 		todo      []I
 		done      []O

@@ -31,7 +31,7 @@ func TestForwardOne(t *testing.T) {
 		}
 
 		go generate()
-		go pipeline.ForwardOne(input, output, identity)
+		go pipeline.Forward(input, output, identity)
 		receive()
 
 		for i := 0; i < total; i++ {
@@ -76,7 +76,7 @@ func TestForwardSome(t *testing.T) {
 		}
 
 		go generate()
-		go pipeline.ForwardSome(input, output, identity)
+		go pipeline.ForwardSlice(input, output, identity)
 		receive()
 
 		for i := 0; i < total; i++ {
