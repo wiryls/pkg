@@ -6,10 +6,10 @@ import (
 )
 
 // New create a flow to process some tasks.
-func New() *Flow {
+func New(limit int) *Flow {
 	return &Flow{
 		count: 0,
-		limit: int32(runtime.NumCPU()),
+		limit: limit,
 		tasks: []func(){},
 		mutex: sync.Mutex{},
 		group: sync.WaitGroup{},
@@ -17,9 +17,10 @@ func New() *Flow {
 }
 
 // Flow process something.
+// User f := Flow{} or f := &Flow{} or f := flow.New(int) to create it.
 type Flow struct {
-	count int32
-	limit int32
+	count int
+	limit int
 	tasks []func()
 	mutex sync.Mutex
 	group sync.WaitGroup
@@ -27,11 +28,14 @@ type Flow struct {
 
 // Append a task to the executor.
 func (f *Flow) Append(task func()) {
-	if f != nil && f.tasks != nil && task != nil {
+	if f != nil && task != nil {
 		defer f.mutex.Unlock()
 		/*_*/ f.mutex.Lock()
 
 		f.tasks = append(f.tasks, task)
+		if f.limit <= 0 {
+			f.limit = runtime.NumCPU()
+		}
 		if f.count < f.limit {
 			f.count++
 			f.group.Add(1)

@@ -17,7 +17,7 @@ func TestFlowAppend(t *testing.T) {
 		count := runtime.NumGoroutine()
 		waste := func() { time.Sleep(1 * time.Microsecond) }
 
-		f := New()
+		f := &Flow{}
 		for i := 0; i < 100; i++ {
 			f.Append(waste)
 		}
@@ -30,7 +30,7 @@ func TestFlowAppend(t *testing.T) {
 		assert.Equal(count+delta, runtime.NumGoroutine())
 
 		f.Wait()
-		assert.EqualValues(0, atomic.LoadInt32(&f.count))
+		assert.EqualValues(0, f.count)
 	}
 
 	{
@@ -44,7 +44,7 @@ func TestFlowAppend(t *testing.T) {
 
 		count := runtime.NumGoroutine()
 
-		f := New()
+		f := &Flow{}
 		for i := 0; i < 1000; i++ {
 			f.Append(waste)
 		}
@@ -54,7 +54,7 @@ func TestFlowAppend(t *testing.T) {
 
 		cancel()
 		f.Wait()
-		assert.EqualValues(0, atomic.LoadInt32(&f.count))
+		assert.EqualValues(0, f.count)
 	}
 
 	{
@@ -62,7 +62,7 @@ func TestFlowAppend(t *testing.T) {
 		count := uint32(0)
 		waste := func() { atomic.AddUint32(&count, 1) }
 
-		f := New()
+		f := Flow{}
 		for i := 0; i < total; i++ {
 			f.Append(waste)
 		}
