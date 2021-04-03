@@ -18,7 +18,7 @@ func TestForwardOne(t *testing.T) {
 		total := 100000
 		result := make([]bool, total)
 
-		identity := func(i flow.I) flow.O { return i }
+		identity := func(i flow.I) (flow.O, bool) { return i, true }
 		generate := func() {
 			defer close(input)
 			for i := 0; i < total; i++ {
@@ -51,7 +51,7 @@ func TestForwardSome(t *testing.T) {
 		total := 100000
 		result := make([]bool, total)
 
-		identity := func(i flow.I) flow.O { return i }
+		identity := func(i flow.I) (flow.O, bool) { return i, true }
 		generate := func() {
 			batch := 100
 			defer close(input)

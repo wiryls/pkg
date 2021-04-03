@@ -7,93 +7,104 @@ type I interface{}
 // O the output type.
 type O interface{}
 
+// Converter is used to convert I to O.
+type Converter func(in I) (out O, ok bool)
+
 // Forward trys to fetch input from src, map it and send it to dst.
-func Forward(source <-chan I, destination chan<- O, mapping func(I) O) {
+func Forward(input <-chan I, output chan<- O, convert Converter) {
 	var (
-		todo      []I
-		done      []O
-		peak      O
-		input     = source
-		output    chan<- O
-		convert   chan struct{}
-		available = make(chan struct{})
+		todo        []I
+		done        []O
+		peak        O
+		src         = input
+		dst         chan<- O
+		cvt         chan struct{}
+		convertible = make(chan struct{})
 	)
-	close(available)
+	close(convertible)
 
-	for input != nil || convert != nil || output != nil {
+	for src != nil || cvt != nil || dst != nil {
 		select {
-		case in, put := <-input:
-			todo = append(todo, in)
+		case in, put := <-src:
+			if put {
+				todo = append(todo, in)
 
-			if !put {
-				input = nil
-			}
-			if len(todo) != 0 {
-				convert = available
-			}
+				if cvt == nil {
+					cvt = convertible // enable channel cvt
+				}
 
-		case <-convert:
-			done = append(done, mapping(todo[0]))
-			todo = todo[1:]
-
-			if len(todo) == 0 {
-				convert = nil
-			}
-			if len(done) != 0 {
-				output = destination
-				peak = done[0]
+			} else {
+				src = nil // block channel src
 			}
 
-		case output <- peak:
+		case <-cvt:
+			if item, ok := convert(todo[0]); ok {
+				done = append(done, item)
+				if dst == nil {
+					dst = output // enable channel dst
+					peak = done[0]
+				}
+			}
+
+			if todo = todo[1:]; len(todo) == 0 {
+				cvt = nil // block channel cvt
+			}
+
+		case dst <- peak:
 			done = done[1:]
 
 			if len(done) != 0 {
 				peak = done[0]
+
 			} else {
-				output = nil
+				dst = nil // block channel dst
 			}
 		}
 	}
 }
 
 // ForwardSlice trys to fetch input from src, map it and send it to dst.
-func ForwardSlice(source <-chan []I, destination chan<- []O, mapping func(I) O) {
+func ForwardSlice(input <-chan []I, output chan<- []O, convert Converter) {
 	var (
-		todo      []I
-		done      []O
-		input     = source
-		output    chan<- []O
-		convert   chan struct{}
-		available = make(chan struct{})
+		todo        []I
+		done        []O
+		src         = input
+		dst         chan<- []O
+		cvt         chan struct{}
+		convertible = make(chan struct{})
 	)
-	close(available)
+	close(convertible)
 
-	for input != nil || convert != nil || output != nil {
+	for src != nil || cvt != nil || dst != nil {
 		select {
-		case in, put := <-input:
-			todo = append(todo, in...)
+		case in, put := <-src:
 
-			if !put {
-				input = nil
-			}
-			if len(todo) != 0 {
-				convert = available
-			}
+			if put {
+				todo = append(todo, in...)
 
-		case <-convert:
-			done = append(done, mapping(todo[0]))
-			todo = todo[1:]
+				if cvt == nil {
+					cvt = convertible
+				}
 
-			if len(todo) == 0 {
-				convert = nil
-			}
-			if len(done) != 0 {
-				output = destination
+			} else {
+				src = nil
 			}
 
-		case output <- done:
+		case <-cvt:
+			if that, ok := convert(todo[0]); ok {
+				done = append(done, that)
+				if dst == nil {
+					dst = output
+				}
+			}
+
+			if todo = todo[1:]; len(todo) == 0 {
+				cvt = nil
+			}
+
+		case dst <- done:
 			done = nil
-			output = nil
+			dst = nil
 		}
 	}
 }
