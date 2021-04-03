@@ -1,23 +1,24 @@
-package pipeline_test
+package flow_test
 
 import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/wiryls/pkg/template/pipeline"
+
+	"github.com/wiryls/pkg/flow"
 )
 
 func TestForwardOne(t *testing.T) {
 	assert := assert.New(t)
 
 	{
-		input := make(chan pipeline.I)
-		output := make(chan pipeline.O)
+		input := make(chan flow.I)
+		output := make(chan flow.O)
 
 		total := 100000
 		result := make([]bool, total)
 
-		identity := func(i pipeline.I) pipeline.O { return i }
+		identity := func(i flow.I) flow.O { return i }
 		generate := func() {
 			defer close(input)
 			for i := 0; i < total; i++ {
@@ -31,7 +32,7 @@ func TestForwardOne(t *testing.T) {
 		}
 
 		go generate()
-		go pipeline.Forward(input, output, identity)
+		go flow.Forward(input, output, identity)
 		receive()
 
 		for i := 0; i < total; i++ {
@@ -44,22 +45,22 @@ func TestForwardSome(t *testing.T) {
 	assert := assert.New(t)
 
 	{
-		input := make(chan []pipeline.I)
-		output := make(chan []pipeline.O)
+		input := make(chan []flow.I)
+		output := make(chan []flow.O)
 
 		total := 100000
 		result := make([]bool, total)
 
-		identity := func(i pipeline.I) pipeline.O { return i }
+		identity := func(i flow.I) flow.O { return i }
 		generate := func() {
 			batch := 100
 			defer close(input)
-			buffer := make([]pipeline.I, 0, batch)
+			buffer := make([]flow.I, 0, batch)
 			for i := 0; i < total; i++ {
 				buffer = append(buffer, i)
 				if i%batch == 0 || i == total-1 {
 					input <- buffer
-					buffer = make([]pipeline.I, 0, batch)
+					buffer = make([]flow.I, 0, batch)
 				}
 			}
 		}
@@ -76,7 +77,7 @@ func TestForwardSome(t *testing.T) {
 		}
 
 		go generate()
-		go pipeline.ForwardSlice(input, output, identity)
+		go flow.ForwardSlice(input, output, identity)
 		receive()
 
 		for i := 0; i < total; i++ {

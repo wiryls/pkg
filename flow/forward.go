@@ -1,12 +1,11 @@
-package pipeline
+package flow
 
-import "github.com/cheekybits/genny/generic"
+// I the input type.
+// Waiting for go 2.0 generic
+type I interface{}
 
-// I the input type
-type I generic.Type
-
-// O the output type
-type O generic.Type
+// O the output type.
+type O interface{}
 
 // Forward trys to fetch input from src, map it and send it to dst.
 func Forward(source <-chan I, destination chan<- O, mapping func(I) O) {
