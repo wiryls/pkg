@@ -60,14 +60,43 @@ func TestFlowAppend(t *testing.T) {
 	{
 		total := 100
 		count := uint32(0)
-		waste := func() { atomic.AddUint32(&count, 1) }
+		adder := func() { atomic.AddUint32(&count, 1) }
 
 		f := Flow{}
 		for i := 0; i < total; i++ {
-			f.Append(waste)
+			f.Append(adder)
 		}
 
 		f.Wait()
 		assert.EqualValues(total, count)
+	}
+}
+
+type Slime struct {
+	B []bool
+	F func(func())
+}
+
+func (s *Slime) Run() {
+	if len(s.B) > 33 {
+		s.F((&Slime{B: s.B[33:], F: s.F}).Run)
+		s.B = s.B[:33]
+	}
+	for i := range s.B {
+		s.B[i] = true
+	}
+}
+
+func TestSampleTask(t *testing.T) {
+	assert := assert.New(t)
+	{
+		bools := [1000]bool{}
+		f := Flow{}
+		f.Append((&Slime{B: bools[:], F: f.Append}).Run)
+		f.Wait()
+
+		for i := range bools {
+			assert.True(bools[i], i)
+		}
 	}
 }
