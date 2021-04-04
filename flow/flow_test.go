@@ -19,7 +19,7 @@ func TestFlowAppend(t *testing.T) {
 
 		f := &Flow{}
 		for i := 0; i < 100; i++ {
-			f.Append(waste)
+			f.Push(waste)
 		}
 
 		delta := int(f.limit)
@@ -46,7 +46,7 @@ func TestFlowAppend(t *testing.T) {
 
 		f := &Flow{}
 		for i := 0; i < 1000; i++ {
-			f.Append(waste)
+			f.Push(waste)
 		}
 
 		delta := int(f.limit)
@@ -64,7 +64,7 @@ func TestFlowAppend(t *testing.T) {
 
 		f := Flow{}
 		for i := 0; i < total; i++ {
-			f.Append(adder)
+			f.Push(adder)
 		}
 
 		f.Wait()
@@ -92,7 +92,7 @@ func TestSampleTask(t *testing.T) {
 	{
 		bools := [1000]bool{}
 		f := Flow{}
-		f.Append((&Slime{B: bools[:], F: f.Append}).Run)
+		f.Push((&Slime{B: bools[:], F: f.Push}).Run)
 		f.Wait()
 
 		for i := range bools {

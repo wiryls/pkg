@@ -17,7 +17,13 @@ func New(limit int) *Flow {
 }
 
 // Flow process something.
-// User f := Flow{} or f := &Flow{} or f := flow.New(int) to create it.
+//
+// Create it via:
+// f := Flow{}, or
+// f := &Flow{}, or
+// f := flow.New(int)
+//
+// Note: it is goroutine-safe and never copy after first use.
 type Flow struct {
 	count int
 	limit int
@@ -26,8 +32,8 @@ type Flow struct {
 	group sync.WaitGroup
 }
 
-// Append a task to the executor.
-func (f *Flow) Append(task func()) {
+// Push a task to the executor.
+func (f *Flow) Push(task func()) {
 	if f != nil && task != nil {
 		defer f.mutex.Unlock()
 		/*_*/ f.mutex.Lock()
