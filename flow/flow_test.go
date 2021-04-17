@@ -100,3 +100,23 @@ func TestSampleTask(t *testing.T) {
 		}
 	}
 }
+
+// note: please test this with -race
+func TestRace(t *testing.T) {
+	assert := assert.New(t)
+	{
+		f := Flow{}
+		for i := 0; i < 10; i++ {
+			go func() {
+				for x, n := 0, 1000; x < n; x++ {
+					f.Push(func() {})
+				}
+			}()
+		}
+		for i := 0; i < 10; i++ {
+			go f.Wait()
+		}
+		f.Wait()
+		assert.True(true)
+	}
+}

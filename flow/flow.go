@@ -7,13 +7,7 @@ import (
 
 // New create a flow to process some tasks.
 func New(limit int) *Flow {
-	return &Flow{
-		count: 0,
-		limit: limit,
-		tasks: []func(){},
-		mutex: sync.Mutex{},
-		group: sync.WaitGroup{},
-	}
+	return &Flow{limit: limit}
 }
 
 // Flow process something.
@@ -29,7 +23,7 @@ type Flow struct {
 	limit int
 	tasks []func()
 	mutex sync.Mutex
-	group sync.WaitGroup
+	inner sync.Mutex
 }
 
 // Push a task to the executor.
@@ -42,9 +36,11 @@ func (f *Flow) Push(task func()) {
 		if f.limit <= 0 {
 			f.limit = runtime.NumCPU()
 		}
+		if f.count == 0 {
+			f.inner.Lock()
+		}
 		if f.count < f.limit {
 			f.count++
-			f.group.Add(1)
 			go f.low()
 		}
 	}
@@ -52,12 +48,11 @@ func (f *Flow) Push(task func()) {
 
 // Wait until all task done.
 func (f *Flow) Wait() {
-	f.group.Wait()
+	defer f.inner.Unlock()
+	/*_*/ f.inner.Lock()
 }
 
 func (f *Flow) low() {
-	defer f.group.Done()
-
 	f.mutex.Lock()
 	for len(f.tasks) != 0 {
 		action := f.tasks[0]
@@ -69,5 +64,8 @@ func (f *Flow) low() {
 		f.mutex.Lock()
 	}
 	f.count--
+	if f.count == 0 {
+		f.inner.Unlock()
+	}
 	f.mutex.Unlock()
 }
